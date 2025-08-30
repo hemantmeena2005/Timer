@@ -37,7 +37,8 @@ export default function SignIn() {
         console.log('✅ Signin successful');
         const session = await getSession();
         console.log('📊 Session after signin:', session);
-        router.push('/');
+        // Force page reload to ensure proper session state
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('❌ Signin error:', error);
