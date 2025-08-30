@@ -1,103 +1,159 @@
-import Image from "next/image";
+'use client';
+
+import React, { useState } from 'react';
+import { Task } from '@/types';
+import { useTasks } from '@/lib/hooks/useTasks';
+import { useTimer } from '@/lib/hooks/useTimer';
+import { useToast } from '@/lib/hooks/useToast';
+import { Header } from '@/components/Header';
+import { Timer } from '@/components/timer/Timer';
+import { TaskList } from '@/components/tasks/TaskList';
+import { TaskForm } from '@/components/tasks/TaskForm';
+import { Dashboard } from '@/components/Dashboard';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { tasks, addTask, updateTask, deleteTask, updateTaskTime } = useTasks();
+  const {
+    timerState,
+    timeEntries,
+    startTimer,
+    stopTimer,
+    pauseTimer,
+    resumeTimer,
+    getTodayTimeEntries,
+  } = useTimer();
+  const { showToast } = useToast();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const [activeView, setActiveView] = useState<'dashboard' | 'timer' | 'tasks'>('timer');
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const todayEntries = getTodayTimeEntries();
+
+  // Debug: Track tasks state changes
+  React.useEffect(() => {
+    console.log('📊 Main page - tasks state updated:', tasks.length, 'tasks');
+    console.log('📋 Main tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
+  }, [tasks]);
+
+  const handleAddTask = (name: string, description?: string, color?: string) => {
+    console.log('🎯 handleAddTask called:', { name, description, color });
+    addTask(name, description, color);
+    showToast(`Task "${name}" created successfully!`, 'success');
+    console.log('🆕 Task added from main page');
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setShowTaskForm(true);
+  };
+
+  const handleUpdateTask = (name: string, description?: string, color?: string) => {
+    if (editingTask) {
+      updateTask(editingTask.id, { name, description, color });
+      showToast(`Task "${name}" updated successfully!`, 'success');
+      setEditingTask(null);
+    }
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (window.confirm('Are you sure you want to delete this task? This will also delete all associated time entries.')) {
+      deleteTask(taskId);
+      showToast(`Task "${task?.name}" deleted successfully!`, 'success');
+    }
+  };
+
+  const handleStopTimer = () => {
+    const duration = stopTimer(updateTaskTime);
+    return duration;
+  };
+
+  const handleStartFromTask = (task: Task) => {
+    if (timerState.isRunning && timerState.currentTask?.id !== task.id) {
+      if (window.confirm('This will stop the current timer and start a new one. Continue?')) {
+        handleStopTimer();
+        startTimer(task);
+      }
+    } else if (!timerState.isRunning) {
+      startTimer(task);
+    }
+  };
+
+  const handleCloseTaskForm = () => {
+    setShowTaskForm(false);
+    setEditingTask(null);
+  };
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return (
+          <Dashboard 
+            tasks={tasks} 
+            timeEntries={timeEntries} 
+            todayEntries={todayEntries}
+          />
+        );
+      case 'timer':
+        console.log('🖥️ Rendering timer view with tasks:', tasks.length, 'tasks');
+        console.log('📋 Timer tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
+        return (
+          <div className="space-y-6">
+            <Timer
+              isRunning={timerState.isRunning}
+              currentTask={timerState.currentTask}
+              elapsedTime={timerState.elapsedTime}
+              onStart={startTimer}
+              onStop={handleStopTimer}
+              onPause={pauseTimer}
+              onResume={resumeTimer}
+              tasks={tasks}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+            {tasks.length > 0 && (
+              <TaskList
+                tasks={tasks}
+                onEdit={handleEditTask}
+                onDelete={handleDeleteTask}
+                onStart={handleStartFromTask}
+                currentTaskId={timerState.currentTask?.id}
+              />
+            )}
+          </div>
+        );
+      case 'tasks':
+        return (
+          <TaskList
+            tasks={tasks}
+            onEdit={handleEditTask}
+            onDelete={handleDeleteTask}
+            onStart={handleStartFromTask}
+            currentTaskId={timerState.currentTask?.id}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header
+        onNewTask={() => setShowTaskForm(true)}
+        activeView={activeView}
+        onViewChange={setActiveView}
+      />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderContent()}
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      <TaskForm
+        isOpen={showTaskForm}
+        onClose={handleCloseTaskForm}
+        onSubmit={editingTask ? handleUpdateTask : handleAddTask}
+        task={editingTask}
+      />
     </div>
   );
 }
