@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { Task } from '@/types';
 import { useTasks } from '@/lib/hooks/useTasks';
 import { useTimer } from '@/lib/hooks/useTimer';
@@ -10,8 +12,11 @@ import { Timer } from '@/components/timer/Timer';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { Dashboard } from '@/components/Dashboard';
+import { Leaderboard } from '@/components/Leaderboard';
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const { tasks, addTask, updateTask, deleteTask, updateTaskTime } = useTasks();
   const {
     timerState,
@@ -24,7 +29,7 @@ export default function Home() {
   } = useTimer();
   const { showToast } = useToast();
 
-  const [activeView, setActiveView] = useState<'dashboard' | 'timer' | 'tasks'>('timer');
+  const [activeView, setActiveView] = useState<'dashboard' | 'timer' | 'tasks' | 'leaderboard'>('timer');
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
@@ -35,6 +40,38 @@ export default function Home() {
     console.log('📊 Main page - tasks state updated:', tasks.length, 'tasks');
     console.log('📋 Main tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
   }, [tasks]);
+
+  // Redirect to signin if not authenticated
+  React.useEffect(() => {
+    if (status === 'loading') return; // Still loading
+    
+    if (status === 'unauthenticated') {
+      console.log('🔒 User not authenticated, redirecting to signin');
+      router.push('/auth/signin');
+      return;
+    }
+    
+    if (session?.user) {
+      console.log('✅ User authenticated:', session.user.email);
+    }
+  }, [session, status, router]);
+
+  // Show loading state while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (status === 'unauthenticated') {
+    return null;
+  }
 
   const handleAddTask = (name: string, description?: string, color?: string) => {
     console.log('🎯 handleAddTask called:', { name, description, color });
@@ -99,7 +136,7 @@ export default function Home() {
         console.log('🖥️ Rendering timer view with tasks:', tasks.length, 'tasks');
         console.log('📋 Timer tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <Timer
               isRunning={timerState.isRunning}
               currentTask={timerState.currentTask}
@@ -131,20 +168,22 @@ export default function Home() {
             currentTaskId={timerState.currentTask?.id}
           />
         );
+      case 'leaderboard':
+        return <Leaderboard />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header
         onNewTask={() => setShowTaskForm(true)}
         activeView={activeView}
         onViewChange={setActiveView}
       />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
         {renderContent()}
       </main>
 

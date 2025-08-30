@@ -87,16 +87,16 @@ export function Dashboard({ tasks, timeEntries, todayEntries }: DashboardProps) 
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+          <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
             <div className="flex items-center">
-              <div className={`p-3 rounded-lg ${stat.color}`}>
+              <div className={`p-2 sm:p-3 rounded-lg ${stat.color}`}>
                 {stat.icon}
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 truncate">{stat.label}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{stat.value}</p>
               </div>
             </div>
           </div>
@@ -105,41 +105,43 @@ export function Dashboard({ tasks, timeEntries, todayEntries }: DashboardProps) 
 
       {/* Task Breakdown */}
       {taskStats.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Task Breakdown</h3>
-          <div className="space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">Task Breakdown</h3>
+          <div className="space-y-3 sm:space-y-4">
             {taskStats.map((task) => (
-              <div key={task.id} className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 flex-1">
+              <div key={task.id} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
                   <div 
-                    className="w-3 h-3 rounded-full"
+                    className="w-3 h-3 rounded-full flex-shrink-0"
                     style={{ backgroundColor: task.color }}
                   />
-                  <span className="text-sm font-medium text-gray-900 truncate">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {task.name}
                   </span>
                 </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
+                <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4 ml-6 sm:ml-0">
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {formatDuration(task.totalDuration)}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       Today: {formatDuration(task.todayDuration)}
                     </div>
                   </div>
-                  <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full transition-all duration-300"
-                      style={{
-                        width: `${Math.min(task.percentage, 100)}%`,
-                        backgroundColor: task.color,
-                      }}
-                    />
+                  <div className="flex items-center space-x-2">
+                    <div className="w-16 sm:w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Math.min(task.percentage, 100)}%`,
+                          backgroundColor: task.color,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 w-6 sm:w-8 text-right flex-shrink-0">
+                      {task.percentage.toFixed(0)}%
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500 w-8 text-right">
-                    {task.percentage.toFixed(0)}%
-                  </span>
                 </div>
               </div>
             ))}
@@ -149,27 +151,27 @@ export function Dashboard({ tasks, timeEntries, todayEntries }: DashboardProps) 
 
       {/* Recent Activity */}
       {todayEntries.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Today&apos;s Activity</h3>
-          <div className="space-y-3">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">Today&apos;s Activity</h3>
+          <div className="space-y-2 sm:space-y-3">
             {todayEntries.slice(-5).reverse().map((entry) => {
               const task = tasks.find(t => t.id === entry.taskId);
               return (
-                <div key={entry.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-                  <div className="flex items-center space-x-3">
+                <div key={entry.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div 
-                      className="w-2 h-2 rounded-full"
+                      className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: task?.color || '#6B7280' }}
                     />
-                    <span className="text-sm text-gray-900">{task?.name || 'Unknown Task'}</span>
+                    <span className="text-sm text-gray-900 dark:text-white truncate">{task?.name || 'Unknown Task'}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-gray-900">
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
                       {formatDuration(entry.duration)}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       {new Date(entry.startTime).toLocaleTimeString([], { 
-                        hour: '2-digit', 
+                        hour: '2-digit',
                         minute: '2-digit' 
                       })}
                     </div>

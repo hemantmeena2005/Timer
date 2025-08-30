@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Task, TimeEntry, TimerState } from '@/types';
-import { storage, generateId } from '@/lib/utils';
 
 export function useTimer() {
   const [timerState, setTimerState] = useState<TimerState>({
@@ -9,19 +8,30 @@ export function useTimer() {
     startTime: null,
     elapsedTime: 0,
   });
-
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
 
+  // Fetch time entries from database
   useEffect(() => {
-    const savedEntries = storage.getTimeEntries();
-    setTimeEntries(savedEntries);
-
-    // Restore timer state if it exists
-    const savedTimerState = storage.getTimerState();
-    if (savedTimerState && savedTimerState.isRunning) {
-      setTimerState(savedTimerState);
-    }
+    fetchTimeEntries();
   }, []);
+
+  const fetchTimeEntries = async () => {
+    try {
+      const response = await fetch('/api/time-entries');
+      if (response.ok) {
+        const dbEntries = await response.json();
+        const entriesWithDates = dbEntries.map((entry: { _id: string; startTime: string; endTime?: string; [key: string]: unknown }) => ({
+          ...entry,
+          id: entry._id,
+          startTime: new Date(entry.startTime),
+          endTime: entry.endTime ? new Date(entry.endTime) : undefined
+        }));
+        setTimeEntries(entriesWithDates);
+      }
+    } catch (error) {
+      console.error('Error fetching time entries:', error);
+    }
+  };
 
   // Update elapsed time every second when timer is running
   useEffect(() => {
@@ -40,15 +50,6 @@ export function useTimer() {
     };
   }, [timerState.isRunning, timerState.startTime]);
 
-  // Save timer state to localStorage whenever it changes
-  useEffect(() => {
-    if (timerState.isRunning) {
-      storage.saveTimerState(timerState);
-    } else {
-      storage.clearTimerState();
-    }
-  }, [timerState]);
-
   const startTimer = useCallback((task: Task) => {
     const now = new Date();
     setTimerState({
@@ -59,7 +60,7 @@ export function useTimer() {
     });
   }, []);
 
-  const stopTimer = useCallback((onTaskTimeUpdate?: (taskId: string, duration: number) => void) => {
+  const stopTimer = useCallback(async (onTaskTimeUpdate?: (taskId: string, duration: number) => void) => {
     if (!timerState.isRunning || !timerState.currentTask || !timerState.startTime) {
       return;
     }
@@ -67,25 +68,37 @@ export function useTimer() {
     const endTime = new Date();
     const duration = Math.floor((endTime.getTime() - timerState.startTime.getTime()) / 1000);
 
-    // Create new time entry
-    const newEntry: TimeEntry = {
-      id: generateId(),
-      taskId: timerState.currentTask.id,
-      startTime: timerState.startTime,
-      endTime,
-      duration,
-    };
+    try {
+      // Save time entry to database
+      const response = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: timerState.currentTask.id,
+          startTime: timerState.startTime,
+          endTime,
+          duration
+        })
+      });
 
-    const updatedEntries = [...timeEntries, newEntry];
-    setTimeEntries(updatedEntries);
-    storage.saveTimeEntries(updatedEntries);
+      if (response.ok) {
+        const newEntry = await response.json();
+        const entryWithDates = {
+          ...newEntry,
+          startTime: new Date(newEntry.startTime),
+          endTime: new Date(newEntry.endTime)
+        };
+        setTimeEntries(prev => [...prev, entryWithDates]);
 
-    // Update task total time
-    if (onTaskTimeUpdate) {
-      onTaskTimeUpdate(timerState.currentTask.id, duration);
+        // Update task total time
+        if (onTaskTimeUpdate) {
+          onTaskTimeUpdate(timerState.currentTask.id, duration);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving time entry:', error);
     }
 
-    // Reset timer state
     setTimerState({
       isRunning: false,
       currentTask: null,
@@ -93,10 +106,8 @@ export function useTimer() {
       elapsedTime: 0,
     });
 
-    storage.clearTimerState();
-
     return duration;
-  }, [timerState, timeEntries]);
+  }, [timerState]);
 
   const pauseTimer = useCallback(() => {
     setTimerState(prev => ({ ...prev, isRunning: false }));

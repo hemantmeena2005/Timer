@@ -61,7 +61,7 @@ export function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormProps) {
       onClose={onClose} 
       title={task ? 'Edit Task' : 'Create New Task'}
     >
-      <form onSubmit={handleSubmit} className="space-y-4  text-black">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Task Name"
           value={name}
@@ -79,19 +79,19 @@ export function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormProps) {
         />
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Color
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {taskColors.map((color) => (
               <button
                 key={color}
                 type="button"
                 onClick={() => setSelectedColor(color)}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all ${
                   selectedColor === color
-                    ? 'border-gray-900 scale-110'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-gray-900 dark:border-white scale-110'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
                 style={{ backgroundColor: color }}
               />
@@ -99,11 +99,11 @@ export function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormProps) {
           </div>
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
+          <Button type="button" variant="outline" onClick={onClose} className="order-2 sm:order-1">
             Cancel
           </Button>
-          <Button type="submit">
+          <Button type="submit" className="order-1 sm:order-2">
             {task ? 'Update Task' : 'Create Task'}
           </Button>
         </div>
